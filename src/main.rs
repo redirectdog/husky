@@ -26,6 +26,8 @@ fn main() {
         )
         .expect("Failed to prepare statement");
 
+    let resolver = trust_dns_resolver::Resolver::default().expect("Failed to create resolver");
+
     loop {
         let result = task_stmt
             .query(&[])
@@ -44,16 +46,13 @@ fn main() {
                 }
             })
             .and_then(|(id, host)| {
-                let res = {
-                    use std::net::ToSocketAddrs;
-                    host.to_socket_addrs()
-                };
+                let res = resolver.lookup_ip(&host);
                 let confirmed = match res {
                     Ok(addrs) => {
                         let mut confirmed = false;
                         for found_addr in addrs {
                             for expected_addr in &expected_addresses {
-                                if expected_addr == &found_addr.ip() {
+                                if expected_addr == &found_addr {
                                     confirmed = true;
                                     break;
                                 }
